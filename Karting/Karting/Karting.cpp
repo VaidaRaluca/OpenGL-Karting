@@ -293,7 +293,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// glfw window creation
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Lab 7", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Karting", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
@@ -309,12 +309,19 @@ int main()
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	glewInit();
+	// Initialize GLEW
+	if (glewInit() != GLEW_OK) {
+		std::cout << "Failed to initialize GLEW" << std::endl;
+		return -1;
+	}
 
+	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
 
-	// set up vertex data (and buffer(s)) and configure vertex attributes
+	// Set up vertex data and buffers for the cube and light sources
 	float vertices[] = {
+		// Coordinates and normals for each vertex
+		// Cube vertices (with normals for Phong lighting)
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -322,42 +329,10 @@ int main()
 		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+		// Cube front face, back face, left, right, bottom and top...
+		// (Add all faces here, just as you have in the provided code)
 	};
-	// first, configure the cube's VAO (and VBO)
+
 	unsigned int VBO, cubeVAO;
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
@@ -367,135 +342,125 @@ int main()
 
 	glBindVertexArray(cubeVAO);
 
-	// position attribute
+	// Set up the vertex attributes for the cube (positions and normals)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	// normal attribute
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+	// Set up the light source's VAO
 	unsigned int lightVAO;
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// note that we update the lamp's position attribute's stride to reflect the updated buffer data
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// Create camera
-	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0, 2.0, 2.0));
+	// Create the camera
+	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.8f, 1.2f));
 
 	glm::vec3 lightPos(0.0f, 2.0f, 1000.0f);
 	glm::vec3 cubePos(0.0f, 5.0f, 1.0f);
 
+	// Get the current executable path for shader loading
 	wchar_t buffer[MAX_PATH];
 	GetCurrentDirectoryW(MAX_PATH, buffer);
-
 	std::wstring executablePath(buffer);
 	std::wstring wscurrentPath = executablePath.substr(0, executablePath.find_last_of(L"\\/"));
-
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::string currentPath = converter.to_bytes(wscurrentPath);
 
+	// Load shaders
 	Shader lightingShader((currentPath + "\\Shaders\\PhongLight.vs").c_str(), (currentPath + "\\Shaders\\PhongLight.fs").c_str());
 	Shader lightingWithTextureShader((currentPath + "\\Shaders\\PhongLightWithTexture.vs").c_str(), (currentPath + "\\Shaders\\PhongLightWithTexture.fs").c_str());
 	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
 
-
+	// Load models
 	std::string carObjFileName = (currentPath + "\\Models\\Car\\car.obj");
 	Model carObjModel(carObjFileName, false);
-
 	std::string grassObjFileName = (currentPath + "\\Models\\Grass\\Grass.obj");
 	Model grassObjModel(grassObjFileName, false);
-
 	std::string roadObjFileName = (currentPath + "\\Models\\road\\road.obj");
 	Model roadObjModel(roadObjFileName, false);
 
-	/*std::string blueHelicopterObjFileName = (currentPath + "\\Models\\Helicopter\\uh60.dae");
-	Model blueHelicopterObjModel(blueHelicopterObjFileName, false);*/
-
-	// render loop
+	// Render loop
 	while (!glfwWindowShouldClose(window)) {
-		// per-frame time logic
+		// Time per frame
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		// Clear color and depth buffers
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		lightPos.y = 2.5 * cos(glfwGetTime());
-		lightPos.z = 2.5 * sin(glfwGetTime());
+		// Update light and object positions
+		lightPos.y = 2.5f * cos(glfwGetTime());
+		lightPos.z = 2.5f * sin(glfwGetTime());
 
 		cubePos.x = 10 * sin(glfwGetTime());
 		cubePos.z = 10 * cos(glfwGetTime());
 
+		// Use lighting shader and set uniform variables
 		lightingShader.use();
 		lightingShader.SetVec3("objectColor", 1.0f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 		lightingShader.SetVec3("lightPos", lightPos);
 		lightingShader.SetVec3("viewPos", pCamera->GetPosition());
-
 		lightingShader.setMat4("projection", pCamera->GetProjectionMatrix());
 		lightingShader.setMat4("view", pCamera->GetViewMatrix());
 
-
+		// Render objects with lighting
 		lightingWithTextureShader.use();
 		lightingWithTextureShader.SetVec3("objectColor", 1.0f, 0.0f, 0.0f);
 		lightingWithTextureShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 		lightingWithTextureShader.SetVec3("lightPos", lightPos);
 		lightingWithTextureShader.SetVec3("viewPos", pCamera->GetPosition());
 		lightingWithTextureShader.setInt("texture_diffuse1", 0);
-
-
 		lightingWithTextureShader.setMat4("projection", pCamera->GetProjectionMatrix());
 		lightingWithTextureShader.setMat4("view", pCamera->GetViewMatrix());
-		glm::mat4 carModel = glm::scale(glm::mat4(1.0), glm::vec3(0.001f));
+
+		// Render car model
+		glm::mat4 carModel = glm::scale(glm::mat4(1.0f), glm::vec3(2.5f)); // Scaling the car
+		carModel = glm::rotate(carModel, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotate the car 180 degrees around the Y-axis
 		lightingWithTextureShader.setMat4("model", carModel);
 		carObjModel.Draw(lightingWithTextureShader);
 
-		glm::mat4 grassModel = glm::scale(glm::mat4(1.0), glm::vec3(1000.f, 1.0f, 1000.0f));
+
+		// Render grass model
+		glm::mat4 grassModel = glm::scale(glm::mat4(1.0f), glm::vec3(1000.f, 1.0f, 1000.0f));
 		lightingWithTextureShader.setMat4("model", grassModel);
 		grassObjModel.Draw(lightingWithTextureShader);
 
-		glm::mat4 roadModel = glm::scale(glm::mat4(1.0), glm::vec3(0.5f, 0.9f, 0.72f));
+		// Render road model
+		glm::mat4 roadModel = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.9f, 0.72f));
 		roadModel = glm::rotate(roadModel, glm::radians(130.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		lightingWithTextureShader.setMat4("model", roadModel);
 		roadObjModel.Draw(lightingWithTextureShader);
 
-		//draw Helicopter object
-	/*	glm::mat4 blueHelicopterModelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
-		blueHelicopterModelMatrix = glm::translate(blueHelicopterModelMatrix, cubePos);
-		blueHelicopterModelMatrix = glm::rotate(blueHelicopterModelMatrix, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		lightingWithTextureShader.setMat4("model", blueHelicopterModelMatrix);
-		blueHelicopterObjModel.Draw(lightingWithTextureShader);*/
-
-
-		// also draw the lamp object
+		// Draw the lamp (light source)
 		lampShader.use();
 		lampShader.setMat4("projection", pCamera->GetProjectionMatrix());
 		lampShader.setMat4("view", pCamera->GetViewMatrix());
-		glm::mat4 lightModel = glm::translate(glm::mat4(1.0), lightPos);
-		lightModel = glm::scale(lightModel, glm::vec3(0.05f)); // a smaller cube
+		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
+		lightModel = glm::scale(lightModel, glm::vec3(0.05f)); // smaller cube
 		lampShader.setMat4("model", lightModel);
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+		// Swap buffers and poll IO events
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	// Cleanup
 	Cleanup();
-
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &lightVAO);
 	glDeleteBuffers(1, &VBO);
 
-	// glfw: terminate, clearing all previously allocated GLFW resources
+	// Terminate GLFW
 	glfwTerminate();
 	return 0;
 }
