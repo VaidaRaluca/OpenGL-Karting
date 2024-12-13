@@ -404,7 +404,7 @@ int main()
 	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
 
 
-	std::string carObjFileName = (currentPath + "\\Models\\Ferrari\\Ferrari.obj");
+	std::string carObjFileName = (currentPath + "\\Models\\Car\\car.obj");
 	Model carObjModel(carObjFileName, false);
 
 	std::string grassObjFileName = (currentPath + "\\Models\\Grass\\Grass.obj");
