@@ -47,10 +47,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // timing
-double deltaTime = 0.0f;	// time between current frame and last frame
-double lastFrame = 0.0f;
+float deltaTime = 0.0f;	// time between current frame and last frame
+float lastFrame = 0.0f;
 
-
+/*
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	float carSpeed = 0.1f;
@@ -120,6 +120,163 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		<< carPosition.z << ")" << std::endl;
 
 }
+*/
+
+static float carRotationAngle = 0.0f;
+float maxSpeed = 30.0f;          // Viteza maxim?
+float acceleration = 0.06f;      // Accelerarea
+float deceleration = 0.05f;     // Decelerarea când nu exist? input
+float currentSpeed = 0.0f;      // Viteza curent?
+float currentRotationSpeed = 0.0f;	// Viteza curent? de rota?ie
+float rotationSpeed = 1.2f;
+
+void processInput(GLFWwindow* window)
+{
+	if (currentSpeed > 21.0f) {
+		rotationSpeed = 0.7f;
+	}
+	else if (currentSpeed > 15.0f) {
+		rotationSpeed = 1.0f;
+	}
+	else if (currentSpeed < 4.5f) {
+		rotationSpeed = 1.3f;
+	}
+	else {
+		rotationSpeed = 1.2f;
+	}
+	static std::string lastInputKey;
+	// Unghiul de rota?ie al ma?inii             // Viteza ma?inii
+			   // Viteza de rota?ie
+	glm::vec3 cameraOffset(0.0f, 2.0f, 5.0f); // Offset ini?ial al camerei fa?? de ma?in?
+
+	// Închide fereastra cu ESC
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+
+	glm::vec3 forward = glm::vec3(sin(glm::radians(carRotationAngle)), 0.0f, cos(glm::radians(carRotationAngle)));
+
+	glm::vec3 right = glm::vec3(sin(glm::radians(carRotationAngle)), 0.0f, cos(glm::radians(carRotationAngle)));
+
+	//FORWARD
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		if (currentSpeed < 0) {
+			currentSpeed += deceleration * 1.4;
+			if (currentSpeed > 0.0f) currentSpeed = 0.0f;
+		}
+		currentSpeed += acceleration;
+		if (currentSpeed > maxSpeed)
+			currentSpeed = maxSpeed;
+
+		carPosition -= forward * currentSpeed * deltaTime;
+
+		if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			carRotationAngle += rotationSpeed;
+
+		if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			carRotationAngle -= rotationSpeed;
+	}
+
+	//BACKWARDS
+
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		if (currentSpeed >= 0) {
+			currentSpeed -= deceleration * 1.5f;
+			if (currentSpeed < 0.0f) currentSpeed = 0.0f;
+		}
+
+		currentSpeed -= acceleration;
+		if (currentSpeed < -maxSpeed)
+			currentSpeed = -maxSpeed;
+
+		carPosition -= forward * currentSpeed * deltaTime;
+		if (currentSpeed < 0) {
+			if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+				carRotationAngle -= rotationSpeed;
+
+			if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+				carRotationAngle += rotationSpeed;
+		}
+		else {
+			if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+				carRotationAngle += rotationSpeed;
+
+			if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+				carRotationAngle -= rotationSpeed;
+		}
+	}
+
+	// Decelerare atunci când nu este ap?sat niciun buton
+	if (glfwGetKey(window, GLFW_KEY_UP) != GLFW_PRESS && glfwGetKey(window, GLFW_KEY_DOWN) != GLFW_PRESS) {
+		if (currentSpeed > 0.0f) {
+			currentSpeed -= deceleration;
+			if (currentSpeed < 0.0f) currentSpeed = 0.0f;
+		}
+		else if (currentSpeed < 0.0f) {
+			currentSpeed += deceleration;
+			if (currentSpeed > 0.0f) currentSpeed = 0.0f;
+		}
+
+		//curba in timpul miscarii fara acceleratie
+		if (currentSpeed > 0) {
+			if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+				carRotationAngle += rotationSpeed;
+
+			if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+				carRotationAngle -= rotationSpeed;
+		}
+		else if (currentSpeed < 0) {
+			if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+				carRotationAngle -= rotationSpeed;
+
+			if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+				carRotationAngle += rotationSpeed;
+		}
+
+		carPosition -= forward * currentSpeed * deltaTime;
+	}
+
+
+
+	carRotationAngle += currentRotationSpeed * deltaTime;
+
+	// Resetare camer? cu 'R'
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+		pCamera->Reset(width, height);
+		carPosition = glm::vec3(0.0f);
+		carRotationAngle = 0.0f;
+	}
+
+	glm::mat4 carRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(carRotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// Offset-ul camerei, rotit în sens opus fa?? de rota?ia ma?inii
+	glm::mat4 cameraRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(carRotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// Calcul?m offsetul camerei rotit
+	glm::vec3 rotatedCameraOffset = glm::vec3(cameraRotationMatrix * glm::vec4(cameraOffset, 1.0f));
+
+	// Actualiz?m pozi?ia camerei
+	glm::vec3 updatedCameraPosition = carPosition + rotatedCameraOffset;
+	pCamera->SetPosition(updatedCameraPosition);
+
+
+	pCamera->SetPosition(updatedCameraPosition);    // Seteaz? pozitia camerei
+	pCamera->LookAt(carPosition + forward * 1.0f);  // Camera s? priveasc? înaintea ma?inii
+
+	// Debugging
+	std::cout << "Car Position: (" << carPosition.x << ", " << carPosition.y << ", " << carPosition.z << ")\n";
+	std::cout << "Camera Position: (" << updatedCameraPosition.x << ", " << updatedCameraPosition.y << ", " << updatedCameraPosition.z << ")\n";
+
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		lastInputKey = "down";
+	}
+	else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		lastInputKey = "up";
+	}
+}
+
 
 
 int main()
@@ -142,7 +299,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetKeyCallback(window, key_callback);
+	//glfwSetKeyCallback(window, key_callback);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -196,7 +353,9 @@ int main()
 
 	// Create the camera
 	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(1.15f, 0.5f, 0.58f));
+	glm::vec3 cameraFront = pCamera->GetFront();
 
+	carRotationAngle = glm::degrees(atan2(cameraFront.x, cameraFront.z));
 
 	glm::vec3 lightPos(0.0f, 2.0f, 1000.0f);
 	glm::vec3 cubePos(0.0f, 5.0f, 1.0f);
@@ -217,8 +376,10 @@ int main()
 	// Load models
 	std::string carObjFileName = (currentPath + "\\Models\\Car\\car.obj");
 	Model carObjModel(carObjFileName, false);
+
 	std::string grassObjFileName = (currentPath + "\\Models\\Grass\\Grass.obj");
 	Model grassObjModel(grassObjFileName, false);
+
 	std::string roadObjFileName = (currentPath + "\\Models\\road\\road.obj");
 	Model roadObjModel(roadObjFileName, false);
 
@@ -228,6 +389,8 @@ int main()
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		processInput(window);
 
 		// Clear color and depth buffers
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -262,20 +425,22 @@ int main()
 
 
 		// Render grass model
-		glm::mat4 grassModel = glm::scale(glm::mat4(1.0f), glm::vec3(1000.f, 1.0f, 1000.0f));
+		glm::mat4 grassModel = glm::scale(glm::mat4(6.0f), glm::vec3(1000.f, 1.0f, 1000.0f));
 		lightingWithTextureShader.setMat4("model", grassModel);
 		grassObjModel.Draw(lightingWithTextureShader);
 
 		// Render road model
-		glm::mat4 roadModel = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.9f, 0.72f));
+		glm::mat4 roadModel = glm::scale(glm::mat4(6.0f), glm::vec3(0.5f, 0.9f, 0.72f));
 		roadModel = glm::rotate(roadModel, glm::radians(130.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		lightingWithTextureShader.setMat4("model", roadModel);
 		roadObjModel.Draw(lightingWithTextureShader);
 
 		// Render car model
 		glm::mat4 carModel = glm::translate(glm::mat4(1.0f), carPosition);
-		carModel = glm::scale(carModel, glm::vec3(2.5f)); // Scaling the car
-		carModel = glm::rotate(carModel, glm::radians(150.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotate the car 180 degrees around the Y-axis
+		carModel = glm::rotate(carModel, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		carModel = glm::rotate(carModel, glm::radians(carRotationAngle), glm::vec3(0.0f, 1.0f, 0.0f)); // Scaling the car
+		carModel = glm::scale(carModel, glm::vec3(2.5f)); // Rotate the car 180 degrees around the Y-axis
 		/*carModel = glm::translate(carModel, glm::vec3(-0.5f, 0.0f, 0.0f));*/ // Adjust y value to raise the car above the road
 		lightingWithTextureShader.setMat4("model", carModel);
 		carObjModel.Draw(lightingWithTextureShader);

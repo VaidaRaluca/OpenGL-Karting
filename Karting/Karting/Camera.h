@@ -36,7 +36,7 @@ class Camera
 private:
 	// Default camera values
 	const float zNEAR = 0.1f;
-	const float zFAR = 500.f;
+	const float zFAR = 100.f;
 	const float YAW = -90.0f;
 	const float PITCH = 0.0f;
 	const float FOV = 45.0f;
@@ -66,6 +66,11 @@ public:
 
 	void ProcessMouseScroll(float yOffset);
 
+	//Modificare
+	void LookAt(const glm::vec3& target);
+	const glm::vec3& GetFront() const;
+	//
+
 
 public:
 	void ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);
@@ -73,7 +78,7 @@ public:
 	void UpdateCameraVectors();
 
 public:
-	const float cameraSpeedFactor = 250.0f;
+	const float cameraSpeedFactor = 2.5f;
 	const float mouseSensitivity = 0.1f;
 
 	// Perspective properties

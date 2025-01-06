@@ -2,8 +2,8 @@
 
 Camera::Camera(const int width, const int height, const glm::vec3& position)
 {
-		startPosition = position;
-		Set(width, height, position);
+	startPosition = position;
+	Set(width, height, position);
 }
 
 void Camera::Set(const int width, const int height, const glm::vec3& position)
@@ -157,4 +157,21 @@ void Camera::UpdateCameraVectors()
 	// Also re-calculate the Right and Up vector
 	right = glm::normalize(glm::cross(forward, worldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
 	up = glm::normalize(glm::cross(right, forward));
+}
+
+//MODIFICARE
+
+
+void Camera::LookAt(const glm::vec3& target)
+{
+	// Calculeaz? direc?ia forward c?tre ?int?
+	this->forward = glm::normalize(target - position);
+	// Recalculeaz? vectorii right ?i up pentru a p?stra orientarea camerei
+	this->right = glm::normalize(glm::cross(forward, worldUp));
+	this->up = glm::normalize(glm::cross(right, forward));
+}
+
+const glm::vec3& Camera::GetFront() const
+{
+	return forward;
 }
